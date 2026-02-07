@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = "secret123"   # login ke liye required
+app.secret_key = "supersecretkey"  # login ke liye required
 
-# ---------- DATABASE ----------
+# ---------- DATABASE CONNECTION ----------
 def get_db_connection():
     conn = sqlite3.connect("inventory.db")
     conn.row_factory = sqlite3.Row
@@ -29,8 +29,9 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        if username == "admin" and password == "admin123":
-            session["user"] = "admin"
+        # simple hardcoded login (admin)
+        if username == "admin" and password == "admin":
+            session["user"] = username
             return redirect("/")
         else:
             return render_template("login.html", error="Invalid credentials")
@@ -43,7 +44,7 @@ def logout():
     session.pop("user", None)
     return redirect("/login")
 
-# ---------- HOME + ADD + SEARCH ----------
+# ---------- HOME / ADD / SEARCH ----------
 @app.route("/", methods=["GET", "POST"])
 def index():
     if "user" not in session:
@@ -51,8 +52,8 @@ def index():
 
     conn = get_db_connection()
 
+    # ADD ITEM
     if request.method == "POST":
-        # add item logic
         name = request.form["name"].strip()
         quantity = int(request.form["quantity"])
         price = float(request.form["price"])
@@ -65,7 +66,7 @@ def index():
             conn.commit()
         except sqlite3.IntegrityError:
             conn.execute(
-                "UPDATE inventory SET quantity = quantity + ?, price = ? WHERE name = ?",
+                "UPDATE inventory SET quantity = ?, price = ? WHERE name = ?",
                 (quantity, price, name)
             )
             conn.commit()
@@ -78,7 +79,7 @@ def index():
     if search:
         items = conn.execute(
             "SELECT * FROM inventory WHERE name LIKE ?",
-            (f"%{search}%",)
+            ('%' + search + '%',)
         ).fetchall()
     else:
         items = conn.execute("SELECT * FROM inventory").fetchall()
@@ -118,10 +119,6 @@ def delete(id):
 
     return redirect("/")
 
-# ---------- RUN APP (UPDATED LINE) ----------
-import os
-
+# ---------- RUN ----------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
+    app.run(debug=True)
