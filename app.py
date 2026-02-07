@@ -51,8 +51,8 @@ def index():
 
     conn = get_db_connection()
 
-    # ADD ITEM
     if request.method == "POST":
+        # add item logic
         name = request.form["name"].strip()
         quantity = int(request.form["quantity"])
         price = float(request.form["price"])
@@ -124,3 +124,4 @@ import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
